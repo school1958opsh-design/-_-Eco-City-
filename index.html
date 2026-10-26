@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Детектив энергии: Где утечка?</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js CDN for 3D Energy Core -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cyber: {
+              dark: '#0b0f19',
+              card: '#151d30',
+              accent: '#38bdf8',
+              lime: '#4ade80',
+              warn: '#fbbf24',
+              danger: '#f87171'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Inter:wght@400;600;700;800&display=swap');
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0b0f19;
+      color: #f3f4f6;
+    }
+
+    .font-mono-code {
+      font-family: 'Fira Code', monospace;
+    }
+
+    /* Glow utilities */
+    .glow-cyan {
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+    }
+    .glow-lime {
+      box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+    }
+    .glow-red {
+      box-shadow: 0 0 20px rgba(248, 113, 113, 0.3);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b0f19;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+
+  <!-- Header Section -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 px-4 py-3">
+    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-cyan-500/10 border border-cyan-500/30 rounded-xl text-cyan-400">
+          <i class="fa-solid fa-bolt-lightning text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-extrabold tracking-wide text-white flex items-center gap-2">
+            Детектив Энергии <span class="text-xs font-semibold px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">STEM Physics</span>
+          </h1>
+          <p class="text-xs text-slate-400">Миссия: Ликвидация энергопотерь в «Эко-Сити»</p>
+        </div>
+      </div>
+
+      <!-- Step Indicators -->
+      <div class="flex items-center gap-2 sm:gap-4 bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
+        <div id="step-ind-1" class="step-indicator active flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+          <span class="w-5 h-5 rounded-full bg-cyan-500 text-slate-950 flex items-center justify-center text-xs">1</span>
+          <span class="hidden md:inline">Провода</span>
+        </div>
+        <div id="step-ind-2" class="step-indicator flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 transition-all">
+          <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs">2</span>
+          <span class="hidden md:inline">Отопление</span>
+        </div>
+        <div id="step-ind-3" class="step-indicator flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 transition-all">
+          <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs">3</span>
+          <span class="hidden md:inline">Транспорт</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Grid Area -->
+  <main class="max-w-6xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+
+    <!-- Left Column: 3D Core + Game Progress + Task Box (8 cols on lg) -->
+    <section class="lg:col-span-7 flex flex-col gap-6">
+
+      <!-- 3D Core & Energy Bar Card -->
+      <div class="bg-cyber-card border border-slate-800 rounded-2xl p-5 relative overflow-hidden shadow-2xl">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2 text-sm font-semibold text-slate-300">
+            <i class="fa-solid fa-atom text-cyan-400 animate-spin" style="animation-duration: 8s;"></i>
+            <span>3D Ядро Энергосети «Эко-Сити»</span>
+          </div>
+          <span id="core-status-badge" class="text-xs px-2.5 py-1 rounded-full font-bold bg-red-950 text-red-400 border border-red-800/60">
+            Критический уровень
+          </span>
+        </div>
+
+        <!-- Canvas Container for Three.js -->
+        <div id="canvas-container" class="w-full h-48 sm:h-56 bg-slate-950/80 rounded-xl relative overflow-hidden border border-slate-800">
+          <!-- Floating Overlay Info -->
+          <div class="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700/50 text-xs text-slate-300 pointer-events-none flex items-center gap-2">
+            <span id="core-status-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+            <span id="core-status-text">Стабильность: Низкая</span>
+          </div>
+        </div>
+
+        <!-- City Energy Progress Bar -->
+        <div class="mt-4">
+          <div class="flex justify-between items-center text-sm mb-1.5 font-medium">
+            <span class="text-slate-400">Уровень энергии города:</span>
+            <span id="energy-text" class="text-cyan-400 font-bold font-mono-code text-base">30%</span>
+          </div>
+          <div class="w-full h-4 bg-slate-950 rounded-full overflow-hidden border border-slate-800 p-0.5">
+            <div id="energy-bar" class="h-full bg-red-500 rounded-full transition-all duration-700 ease-out w-[30%] shadow-lg"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Task Box & Interactive Input -->
+      <div id="task-card" class="bg-cyber-card border border-slate-800 rounded-2xl p-6 shadow-2xl flex-grow flex flex-col justify-between">
+        <div>
+          <!-- Step Title & Physics Concept -->
+          <div class="flex items-start justify-between gap-4 mb-4">
+            <div>
+              <span id="task-step-label" class="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-1 block">Этап 1 из 3</span>
+              <h2 id="task-title" class="text-xl font-bold text-white">Потери в проводах (Закон Джоуля-Ленца)</h2>
+            </div>
+            <div class="p-2 bg-slate-800 rounded-lg text-slate-300">
+              <i class="fa-solid fa-graduation-cap text-lg text-cyan-400"></i>
+            </div>
+          </div>
+
+          <!-- Description & Physics Problem -->
+          <div id="task-description" class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-4 text-slate-300 text-sm leading-relaxed mb-5">
+            <!-- Dynamic Content Injected Here -->
+          </div>
+
+          <!-- Formula Box -->
+          <div class="bg-cyan-950/30 border border-cyan-800/40 rounded-xl p-3 mb-6 flex items-center gap-3">
+            <div class="p-2 bg-cyan-500/10 rounded-lg text-cyan-400">
+              <i class="fa-solid fa-square-root-variable text-base"></i>
+            </div>
+            <div class="text-xs text-cyan-200">
+              <span class="font-bold text-cyan-300 block mb-0.5">Формула для расчета:</span>
+              <code id="task-formula" class="font-mono-code text-cyan-300 text-sm">Q = I² · R · t</code>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Input Section -->
+        <div>
+          <form id="answer-form" onsubmit="event.preventDefault(); checkAnswer();" class="flex flex-col sm:flex-row gap-3">
+            <div class="relative flex-grow">
+              <input 
+                type="number" 
+                step="any" 
+                id="user-answer" 
+                placeholder="Введите ваш ответ..." 
+                class="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 rounded-xl px-4 py-3 text-white font-mono-code placeholder-slate-500 outline-none transition-all text-base"
+                required
+              >
+              <span id="unit-label" class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">Дж</span>
+            </div>
+            <button 
+              type="submit" 
+              class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 shadow-lg shadow-cyan-500/20"
+            >
+              <span>Проверить</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </form>
+
+          <!-- Feedback Box -->
+          <div id="feedback-box" class="mt-4 p-4 rounded-xl text-sm font-medium hidden border transition-all"></div>
+        </div>
+      </div>
+
+      <!-- Victory Screen (Hidden initially) -->
+      <div id="victory-card" class="bg-cyber-card border border-lime-500/40 rounded-2xl p-8 shadow-2xl hidden flex-col items-center text-center">
+        <div class="w-20 h-20 bg-lime-500/10 border border-lime-500/30 rounded-full flex items-center justify-center text-lime-400 text-4xl mb-4 glow-lime animate-bounce">
+          <i class="fa-solid fa-trophy"></i>
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mb-2">Миссия выполена! 🎉</h2>
+        <p class="text-slate-300 text-sm max-w-md mb-6 leading-relaxed">
+          Вы ликвидировали все энергопотери и восстановили баланс энергосети <span class="text-lime-400 font-bold">«Эко-Сити»</span> до 100%!
+        </p>
+
+        <!-- Certificate / Summary -->
+        <div class="w-full bg-slate-950 border border-slate-800 rounded-xl p-5 mb-6 text-left space-y-3">
+          <div class="text-xs uppercase font-bold text-slate-500 border-b border-slate-800 pb-2">Сертификат энергодетектива</div>
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-400">Изученные законы:</span>
+            <span class="text-slate-200 font-semibold">Закон Джоуля-Ленца, КПД</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-400">Решено задач:</span>
+            <span class="text-lime-400 font-bold font-mono-code">3 / 3 (100%)</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-400">Статус сети:</span>
+            <span class="text-cyan-400 font-bold">Оптимальный (100% Энергии)</span>
+          </div>
+        </div>
+
+        <button 
+          onclick="restartGame()" 
+          class="bg-lime-500 hover:bg-lime-400 text-slate-950 font-bold px-8 py-3 rounded-xl transition-all flex items-center gap-2 active:scale-95 shadow-lg shadow-lime-500/20"
+        >
+          <i class="fa-solid fa-rotate-right"></i>
+          <span>Пройти заново</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- Right Column: Scientific Calculator (5 cols on lg) -->
+    <section class="lg:col-span-5 flex flex-col">
+      <div class="bg-cyber-card border border-slate-800 rounded-2xl p-5 shadow-2xl flex flex-col h-full">
+        <!-- Calc Header -->
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+          <div class="flex items-center gap-2 text-slate-200 font-bold text-sm">
+            <i class="fa-solid fa-calculator text-cyan-400"></i>
+            <span>Научный калькулятор</span>
+          </div>
+          <span class="text-xs font-mono-code text-slate-500">STEM Tool v2.0</span>
+        </div>
+
+        <!-- Calculator Display -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 mb-4 text-right">
+          <div id="calc-history" class="text-xs text-slate-500 font-mono-code h-5 overflow-hidden truncate mb-1"></div>
+          <input 
+            type="text" 
+            id="calc-screen" 
+            readonly 
+            value="0" 
+            class="w-full bg-transparent text-white font-mono-code text-2xl font-bold text-right outline-none cursor-default"
+          >
+        </div>
+
+        <!-- Calculator Keypad Grid -->
+        <div class="grid grid-cols-4 gap-2 flex-grow">
+          <button onclick="calcClear()" class="calc-btn bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-800/40 font-bold p-3 rounded-xl transition-all">C</button>
+          <button onclick="calcBackspace()" class="calc-btn bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 p-3 rounded-xl transition-all"><i class="fa-solid fa-backspace"></i></button>
+          <button onclick="calcAppend('(')" class="calc-btn bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-bold p-3 rounded-xl transition-all">(</button>
+          <button onclick="calcAppend(')')" class="calc-btn bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-bold p-3 rounded-xl transition-all">)</button>
+
+          <button onclick="calcSquare()" class="calc-btn bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-mono-code font-bold p-3 rounded-xl transition-all">x²</button>
+          <button onclick="calcAppend('/')" class="calc-btn bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 font-bold p-3 rounded-xl transition-all">÷</button>
+          <button onclick="calcAppend('*')" class="calc-btn bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 font-bold p-3 rounded-xl transition-all">×</button>
+          <button onclick="calcAppend('-')" class="calc-btn bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 font-bold p-3 rounded-xl transition-all">-</button>
+
+          <button onclick="calcAppend('7')" class="calc-btn bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-bold p-3 rounded-xl transition-all">7</button>
+          <button onclick="calcAppend('8')" class="calc-btn bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-bold p-3 rounded-xl transition-all">8</button>
+          <button onclick="calcAppend('9')" class="calc-btn bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-bold p-3 rounded-xl transition-all">9</button>
+          <button onclick="calcAppend('+')" class="calc-btn bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 font-bold p-3 rounded-xl transition-all">+</button>
+
+          <button onclick="calcAppend('4')" class="calc-btn bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-bold p-3 rounded-xl transition-all">4</button>
+          <button onclick="calcAppend('5')" class="calc-btn bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-bold p-3 rounded-xl transition-all">5</button>
+          <button onclick="calcAppend('6')" class="calc-btn bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-bold p-3 rounded-xl transition-all">6</button>
+          <button onclick="calcCalculate()" class="row-span-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold p-3 rounded-xl transition-all flex items-center justify-center text-xl shadow-lg shadow-cyan-500/20">=</button>
+
+          <button onclick="calcAppend('1')" class="calc-btn bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-bold p-3 rounded-xl transition-all">1</button>
+          <button onclick="calcAppend('2')" class="calc-btn bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-bold p-3 rounded-xl transition-all">2</button>
+          <button onclick="calcAppend('3')" class="calc-btn bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-bold p-3 rounded-xl transition-all">3</button>
+
+          <button onclick="calcAppend('0')" class="col-span-2 calc-btn bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-bold p-3 rounded-xl transition-all">0</button>
+          <button onclick="calcAppend('.')" class="calc-btn bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-bold p-3 rounded-xl transition-all">.</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 bg-slate-950 py-3 text-center text-xs text-slate-500">
+    <p>«Детектив энергии: Где утечка?» — Интерактивная STEM-игра по физике для 7–8 классов</p>
+  </footer>
+
+  <!-- Web Audio Sound Synthesizer -->
+  <script>
+    // Simple Web Audio API Synthesizer for sound effects
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'success') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3); // A5
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } else if (type === 'error') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.25);
+      }
+    }
+  </script>
+
+  <!-- 3D Three.js Script -->
+  <script>
+    let scene, camera, renderer, crystal, outerRing, pointLight;
+    const container = document.getElementById('canvas-container');
+
+    function init3D() {
+      scene = new THREE.Scene();
+      
+      // Camera
+      camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+      camera.position.z = 4;
+
+      // Renderer
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      // Inner Core Crystal Geometry
+      const geometry = new THREE.IcosahedronGeometry(1.2, 0);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0xf87171, // Initial red
+        wireframe: false,
+        roughness: 0.2,
+        metalness: 0.8,
+        flatShading: true
+      });
+      crystal = new THREE.Mesh(geometry, material);
+      scene.add(crystal);
+
+      // Outer Rotating Wireframe Ring
+      const ringGeo = new THREE.TorusGeometry(1.8, 0.03, 16, 50);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true });
+      outerRing = new THREE.Mesh(ringGeo, ringMat);
+      scene.add(outerRing);
+
+      // Lights
+      pointLight = new THREE.PointLight(0xf87171, 3, 50);
+      pointLight.position.set(3, 3, 3);
+      scene.add(pointLight);
+
+      const ambientLight = new THREE.AmbientLight(0x1e293b, 1.5);
+      scene.add(ambientLight);
+
+      // Handle Resize
+      window.addEventListener('resize', onWindowResize);
+
+      animate3D();
+    }
+
+    function animate3D() {
+      requestAnimationFrame(animate3D);
+
+      if (crystal) {
+        crystal.rotation.x += 0.008;
+        crystal.rotation.y += 0.012;
+      }
+      if (outerRing) {
+        outerRing.rotation.x -= 0.01;
+        outerRing.rotation.z += 0.005;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    function onWindowResize() {
+      if (!container || !renderer || !camera) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    // Dynamic 3D Core Visual Update based on Energy Level
+    function update3DCore(energy) {
+      if (!crystal || !pointLight) return;
+
+      let colorHex, badgeText, badgeClass, dotClass, textStatus;
+
+      if (energy >= 80) {
+        colorHex = 0x4ade80; // Bright Lime
+        badgeText = "Оптимальный уровень";
+        badgeClass = "text-lime-400 bg-lime-950 border-lime-800/60";
+        dotClass = "bg-lime-500";
+        textStatus = "Стабильность: Высокая (100%)";
+      } else if (energy >= 50) {
+        colorHex = 0xfbbf24; // Yellow / Orange
+        badgeText = "Умеренный уровень";
+        badgeClass = "text-yellow-400 bg-yellow-950 border-yellow-800/60";
+        dotClass = "bg-yellow-500";
+        textStatus = "Стабильность: Средняя";
+      } else {
+        colorHex = 0xf87171; // Red
+        badgeText = "Критический уровень";
+        badgeClass = "text-red-400 bg-red-950 border-red-800/60";
+        dotClass = "bg-red-500";
+        textStatus = "Стабильность: Низкая";
+      }
+
+      // Smooth color transition on material
+      crystal.material.color.setHex(colorHex);
+      pointLight.color.setHex(colorHex);
+
+      // Update HUD elements
+      const badge = document.getElementById("core-status-badge");
+      badge.innerText = badgeText;
+      badge.className = `text-xs px-2.5 py-1 rounded-full font-bold border ${badgeClass}`;
+
+      document.getElementById("core-status-dot").className = `w-2 h-2 rounded-full animate-pulse ${dotClass}`;
+      document.getElementById("core-status-text").innerText = textStatus;
+    }
+  </script>
+
+  <!-- Game Logic Script -->
+  <script>
+    // Level Specifications
+    const levels = [
+      {
+        stepNum: 1,
+        title: "Потери в проводах (Закон Джоуля-Ленца)",
+        unit: "Дж",
+        desc: `По силовой линии электропередачи течет ток <b>I = 10 А</b>.<br>Сопротивление участка провода составляет <b>R = 5 Ом</b>.<br>Сколько тепловой энергии <b>Q</b> бесполезно теряется за время <b>t = 2 секунды</b>?`,
+        formula: "Q = I² · R · t",
+        correct: 1000,
+        energyGain: 35,
+        hint: "💡 Подсказка: Возведите ток в квадрат (10² = 100), затем умножьте на сопротивление (5) и на время (2). Q = 100 · 5 · 2."
+      },
+      {
+        stepNum: 2,
+        title: "Утепление здания (Теплопотери и КПД)",
+        unit: "%",
+        desc: `Система отопления здания выделила всего <b>Q_всего = 10 000 Дж</b> тепла.<br>Из-за плохой изоляции окон <b>Q_потери = 4 000 Дж</b> ушло на улицу.<br>Найдите коэффициент полезного действия (КПД <b>η</b>) системы отопления в процентах.`,
+        formula: "η = ((Q_всего - Q_потери) / Q_всего) · 100%",
+        correct: 60,
+        energyGain: 35,
+        hint: "💡 Подсказка: Сначала найдите полезное тепло: 10 000 - 4 000 = 6 000 Дж. Затем разделите 6 000 на 10 000 и умножьте на 100%."
+      },
+      {
+        stepNum: 3,
+        title: "Транспорт будущего (Механические потери и трение)",
+        unit: "%",
+        desc: `Электродвигатель электробуса совершил работу <b>A_двиг = 20 000 Дж</b>.<br>Работа, потраченная на преодоление силы трения колес и воздуха, составила <b>A_трен = 5 000 Дж</b>.<br>Рассчитайте механический КПД (<b>η</b>) движения электробуса в процентах.`,
+        formula: "η = ((A_двиг - A_трен) / A_двиг) · 100%",
+        correct: 75,
+        energyGain: 30,
+        hint: "💡 Подсказка: Полезная работа = 20 000 - 5 000 = 15 000 Дж. Разделите 15 000 на 20 000 и умножьте на 100%."
+      }
+    ];
+
+    let currentLevelIndex = 0;
+    let cityEnergy = 30;
+
+    function initGame() {
+      renderLevel(currentLevelIndex);
+      updateEnergyBar();
+    }
+
+    function renderLevel(index) {
+      const level = levels[index];
+      
+      document.getElementById("task-step-label").innerText = `Этап ${level.stepNum} из 3`;
+      document.getElementById("task-title").innerText = level.title;
+      document.getElementById("task-description").innerHTML = level.desc;
+      document.getElementById("task-formula").innerText = level.formula;
+      document.getElementById("unit-label").innerText = level.unit;
+      document.getElementById("user-answer").value = "";
+
+      // Hide Feedback Box
+      const feedback = document.getElementById("feedback-box");
+      feedback.classList.add("hidden");
+
+      // Update Step Indicators
+      for (let i = 1; i <= 3; i++) {
+        const ind = document.getElementById(`step-ind-${i}`);
+        if (i < level.stepNum) {
+          // Completed steps
+          ind.className = "step-indicator flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-lime-500/20 text-lime-300 border border-lime-500/40";
+          ind.querySelector("span").className = "w-5 h-5 rounded-full bg-lime-500 text-slate-950 flex items-center justify-center text-xs";
+          ind.querySelector("span").innerHTML = '<i class="fa-solid fa-check"></i>';
+        } else if (i === level.stepNum) {
+          // Active step
+          ind.className = "step-indicator active flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 glow-cyan";
+          ind.querySelector("span").className = "w-5 h-5 rounded-full bg-cyan-500 text-slate-950 flex items-center justify-center text-xs";
+          ind.querySelector("span").innerText = i;
+        } else {
+          // Pending step
+          ind.className = "step-indicator flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500";
+          ind.querySelector("span").className = "w-5 h-5 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs";
+          ind.querySelector("span").innerText = i;
+        }
+      }
+    }
+
+    function checkAnswer() {
+      const input = document.getElementById("user-answer");
+      const feedback = document.getElementById("feedback-box");
+      const val = parseFloat(input.value.trim());
+      const level = levels[currentLevelIndex];
+
+      if (isNaN(val)) {
+        showFeedback("error", "⚠️ Пожалуйста, введите числовой ответ!");
+        playSound('error');
+        return;
+      }
+
+      // Allow small tolerance for rounding
+      if (Math.abs(val - level.correct) < 0.01) {
+        // Correct answer
+        playSound('success');
+        cityEnergy += level.energyGain;
+        if (cityEnergy > 100) cityEnergy = 100;
+
+        updateEnergyBar();
+        update3DCore(cityEnergy);
+
+        showFeedback("success", `🎉 Верно! Утечка ликвидирована (+${level.energyGain}% к энергии города).`);
+
+        currentLevelIndex++;
+
+        setTimeout(() => {
+          if (currentLevelIndex < levels.length) {
+            renderLevel(currentLevelIndex);
+          } else {
+            showVictory();
+          }
+        }, 1800);
+
+      } else {
+        // Wrong answer
+        playSound('error');
+        showFeedback("error", `❌ Неверно. ${level.hint}`);
+      }
+    }
+
+    function showFeedback(type, message) {
+      const feedback = document.getElementById("feedback-box");
+      feedback.classList.remove("hidden", "bg-red-950/60", "border-red-800/60", "text-red-300", "bg-lime-950/60", "border-lime-800/60", "text-lime-300");
+
+      if (type === "success") {
+        feedback.classList.add("bg-lime-950/60", "border-lime-800/60", "text-lime-300");
+      } else {
+        feedback.classList.add("bg-red-950/60", "border-red-800/60", "text-red-300");
+      }
+      feedback.innerHTML = message;
+    }
+
+    function updateEnergyBar() {
+      const bar = document.getElementById("energy-bar");
+      const text = document.getElementById("energy-text");
+
+      bar.style.width = cityEnergy + "%";
+      text.innerText = cityEnergy + "%";
+
+      if (cityEnergy >= 80) {
+        bar.className = "h-full bg-lime-400 rounded-full transition-all duration-700 ease-out shadow-lg shadow-lime-500/50";
+      } else if (cityEnergy >= 50) {
+        bar.className = "h-full bg-yellow-400 rounded-full transition-all duration-700 ease-out shadow-lg shadow-yellow-500/50";
+      } else {
+        bar.className = "h-full bg-red-500 rounded-full transition-all duration-700 ease-out shadow-lg shadow-red-500/50";
+      }
+    }
+
+    function showVictory() {
+      document.getElementById("task-card").classList.add("hidden");
+      const victoryCard = document.getElementById("victory-card");
+      victoryCard.classList.remove("hidden");
+      victoryCard.classList.add("flex");
+
+      // Trigger Confetti Celebration Effect
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+      }
+    }
+
+    function restartGame() {
+      currentLevelIndex = 0;
+      cityEnergy = 30;
+
+      document.getElementById("victory-card").classList.add("hidden");
+      document.getElementById("victory-card").classList.remove("flex");
+      document.getElementById("task-card").classList.remove("hidden");
+
+      initGame();
+      update3DCore(cityEnergy);
+    }
+  </script>
+
+  <!-- Scientific Calculator Script -->
+  <script>
+    let calcScreen = document.getElementById("calc-screen");
+    let calcHistory = document.getElementById("calc-history");
+
+    function calcAppend(val) {
+      if (calcScreen.value === "0" && val !== '.') {
+        calcScreen.value = val;
+      } else {
+        calcScreen.value += val;
+      }
+    }
+
+    function calcClear() {
+      calcScreen.value = "0";
+      calcHistory.innerText = "";
+    }
+
+    function calcBackspace() {
+      if (calcScreen.value.length > 1) {
+        calcScreen.value = calcScreen.value.slice(0, -1);
+      } else {
+        calcScreen.value = "0";
+      }
+    }
+
+    function calcSquare() {
+      try {
+        let current = parseFloat(calcScreen.value);
+        if (!isNaN(current)) {
+          calcHistory.innerText = `sqr(${current})`;
+          calcScreen.value = (current * current).toString();
+        }
+      } catch (e) {
+        calcScreen.value = "Ошибка";
+      }
+    }
+
+    function calcCalculate() {
+      try {
+        let expression = calcScreen.value;
+        calcHistory.innerText = expression + " =";
+        
+        // Sanitize & evaluate math expression safely
+        let sanitized = expression.replace(/×/g, '*').replace(/÷/g, '/');
+        let result = Function('"use strict";return (' + sanitized + ')')();
+
+        // Round decimal places if needed
+        if (typeof result === 'number') {
+          result = Math.round(result * 10000) / 10000;
+        }
+
+        calcScreen.value = result.toString();
+      } catch (e) {
+        calcScreen.value = "Ошибка";
+      }
+    }
+  </script>
+
+  <!-- Initialize 3D and Game on Load -->
+  <script>
+    window.onload = function() {
+      init3D();
+      initGame();
+    };
+  </script>
+</body>
+</html>
